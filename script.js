@@ -77,6 +77,8 @@ class App {
   #mapEvent;
   #mapZoomLevel = 13;
   #workouts = [];
+  // lat;
+  // lng;
 
   constructor() {
     // Get user's position
@@ -87,6 +89,9 @@ class App {
 
     // Delete individual workouts
     this._deleteWorkout();
+
+    // Edit workouts
+    // this._editWorkout();
 
     // Attach event handlers
     form.addEventListener('submit', this._newWorkout.bind(this));
@@ -121,6 +126,8 @@ class App {
     //Handling clicks on map
     this.#map.on('click', this._showForm.bind(this));
 
+    console.log(this.#workouts);
+
     this.#workouts.forEach(work => {
       this._renderWorkoutMarker(work);
       // this._moveToPopup(work);
@@ -153,19 +160,18 @@ class App {
 
   //Create and render workout
   _newWorkout(e) {
+    e.preventDefault();
     //Helper functions
     const validInputs = (...inputs) =>
       inputs.every(inp => Number.isFinite(inp));
 
     const allPositive = (...inputs) => inputs.every(inp => inp > 0);
 
-    e.preventDefault();
-
     // Get data from form
     const type = inputType.value;
     const distance = +inputDistance.value;
     const duration = +inputDuration.value;
-    const { lat, lng } = this.#mapEvent.latlng;
+    let { lat, lng } = this.#mapEvent.latlng;
     let workout;
 
     // If data is running, create running object
@@ -313,23 +319,6 @@ class App {
     // workout.click();
   }
 
-  _deleteWorkout() {
-    const btnDelete = document.querySelectorAll('.workout__delete');
-    let workouts = JSON.parse(localStorage.getItem('workouts'));
-    this.#workouts = workouts;
-    btnDelete.forEach(btn =>
-      btn.addEventListener('click', function (e) {
-        const item = e.target.closest('.workout');
-        workouts = workouts.filter(it => it.id != item.dataset.id);
-
-        localStorage.setItem('workouts', JSON.stringify(workouts));
-        location.reload();
-      })
-    );
-
-    // this._getLocalStorage();
-  }
-
   _setLocalStorage() {
     localStorage.setItem('workouts', JSON.stringify(this.#workouts));
     location.reload();
@@ -348,10 +337,71 @@ class App {
     });
   }
 
-  // _deleteWorkout(e) {
-  //   const workItem = e.target.closest('.workout');
-  //   console.log(workItem);
-  // }
+  _deleteWorkout() {
+    const btnDelete = document.querySelectorAll('.workout__delete');
+    let actions = JSON.parse(localStorage.getItem('workouts'));
+    this.#workouts = actions;
+    btnDelete.forEach(btn =>
+      btn.addEventListener('click', function (e) {
+        const item = e.target.closest('.workout');
+        actions = actions.filter(it => it.id != item.dataset.id);
+
+        localStorage.setItem('workouts', JSON.stringify(actions));
+        location.reload();
+      })
+    );
+  }
+
+  _edit(e) {
+    // let { lat, lng } = this.#mapEvent.latlng;
+    // show form
+    this._showForm();
+
+    // Grab objects from local storage
+    let workouts = JSON.parse(localStorage.getItem('workouts'));
+    this.#workouts = workouts;
+
+    // Identify object to edit
+    const objToEditId = e.target.closest('.workout').dataset.id;
+    console.log(workouts, objToEditId);
+
+    // Find it from the stored arrays
+    const objToEdit = workouts.find(obj => obj.id === objToEditId);
+    console.log(objToEdit);
+
+    // Modify the values of the objects
+    if (objToEdit) {
+      // objToEdit.type = inputType.value;
+      // objToEdit.distance = +inputDistance.value;
+      // objToEdit.duration = +inputDuration.value;
+
+      inputType.value = objToEdit.type;
+      inputDistance.value = objToEdit.distance;
+      inputDuration.value = objToEdit.duration;
+      inputCadence.value = objToEdit.cadence;
+      inputElevation.value = objToEdit.elevation;
+      // [lat, lng] = objToEdit.coords;
+      [this.lat, this.lng] = [objToEdit.coords[0], objToEdit.coords[1]];
+      // this.lat = objToEdit.coords[0];
+      // this.lng = objToEdit.coords[1];
+      console.log(this.lat, this.lng);
+      // [this.lat, this.lng] = objToEdit.coords;
+    }
+    // { lat, lng } = this.#mapEvent.latlng;
+
+    // objToEdit.coords = this.coords;
+    // objToEdit.lng = lng;
+    this._newWorkout();
+  }
+
+  _editWorkout(e) {
+    // Attach event listener to the btns
+    const btnEdit = document.querySelectorAll('.workout__edit');
+    btnEdit.forEach(btn =>
+      btn.addEventListener('click', this._edit.bind(this))
+    );
+    // On click, open form
+  }
 
   reset() {
     localStorage.removeItem('workouts');
